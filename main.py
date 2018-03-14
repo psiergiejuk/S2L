@@ -28,8 +28,35 @@ class Application:
 
 
     def main(self):
+        bar = urwid.BarGraph(['normal', 'inverse'],
+         ['normal', 'inverse'],
+         { (1,0): 'normal', })
         track = wave.open(self.WV_FILE, "r")
-        length = track.getnframes()
+        self.length = track.getnframes()
+        data = []
+        self.count = 0
+        sample = track.getsampwidth()
+        def tic(_loop, _data):
+            if self.count > self.length:
+                urwid.ExitMainLoop()
+            else:
+                wv_data = track.readframes(1)
+                data.append(struct.unpack("<h", wv_data))
+                if self.count > 100:
+                    data.pop(0)
+                bar.set_data(data,100)
+                self.count += 1
+                win.set_alarm_in(0.01, tic)
+
+    
+        def next_data(key):
+            if key == "q":
+                urwid.ExitMainLoop()
+                
+        win = urwid.MainLoop(bar, unhandled_input=next_data)
+        win.set_alarm_in(0, tic)
+        win.run()
+        """
         for i in range(0,length):
             wv_data = track.readframes(1)
             sample = track.getsampwidth()
@@ -41,6 +68,7 @@ class Application:
                 out = " "*(60 + int_data) + "#"*(abs(int_data))
             print(sample*i, out)
             time.sleep(0.0001)
+        """
 
 if __name__ == "__main__":
     app = Application()
